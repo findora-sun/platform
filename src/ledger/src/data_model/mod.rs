@@ -1631,6 +1631,21 @@ impl Transaction {
         self.check_fee() && self.fra_no_illegal_issuance(td_height)
     }
 
+    //check one of the inputs is an fra 
+    pub fn check_inputs_fra(&self) -> bool{
+
+    }
+
+    //check one of the outputs is an fra 
+    pub fn check_inputs_fra(&self) -> bool{
+        
+    }
+
+    //check amount sum equality for each asset type - FRA, custom asset and NFT
+    pub fn check_amount_sum_equality(&self) -> bool{
+
+    }
+
     /// A simple fee checker
     ///
     /// The check logic is as follows:

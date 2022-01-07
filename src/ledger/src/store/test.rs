@@ -756,6 +756,23 @@ fn gen_fee_operation(
 }
 
 #[test]
+fn check_anon_fees() {
+    let mut ledger = LedgerState::tmp_ledger();
+    let fra_owner_kp = XfrKeyPair::generate(&mut ChaChaRng::from_entropy());
+
+    let tx = utils::fra_gen_initial_tx(&fra_owner_kp);
+
+    //check at least one of the inputs is fra
+    assert!(tx.check_inputs_fra());
+
+    //check at least one of the outputs is fra
+    assert!(tx.check_outputs_fra());
+
+    //check amount sum equality for each asset types
+    assert!(tx.check_amount_sum_equality());
+}
+
+#[test]
 fn test_check_fee_with_ledger() {
     let mut ledger = LedgerState::tmp_ledger();
     let fra_owner_kp = XfrKeyPair::generate(&mut ChaChaRng::from_entropy());
