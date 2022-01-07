@@ -1637,7 +1637,7 @@ impl Transaction {
     }
 
     //check one of the outputs is an fra 
-    pub fn check_inputs_fra(&self) -> bool{
+    pub fn check_outputs_fra(&self) -> bool{
         
     }
 
