@@ -770,6 +770,16 @@ fn check_anon_fees() {
 
     //check amount sum equality for each asset types
     assert!(tx.check_amount_sum_equality());
+
+    let effect = TxnEffect::compute_effect(tx.clone()).unwrap();
+    let mut block = ledger.start_block().unwrap();
+    let tmp_sid = ledger.apply_transaction(&mut block, effect, false).unwrap();
+    let txo_sid = ledger
+        .finish_block(block)
+        .unwrap()
+        .remove(&tmp_sid)
+        .unwrap()
+        .1[0];
 }
 
 #[test]
