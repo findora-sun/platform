@@ -1631,9 +1631,133 @@ impl Transaction {
         self.check_fee() && self.fra_no_illegal_issuance(td_height)
     }
 
+<<<<<<< HEAD
     //check one of the inputs is an fra 
     pub fn check_inputs_fra(&self) -> bool{
         
+=======
+    //check one of the inputs is an FRA
+
+    /*The scalar m can encode an arbitary message by using any suitable cryptographic collision resistant
+    hash function Hash: {0,1}* –––––---> Fp that maps data strings onto the Fp.
+    The element C is generated in a unique way using m and an additional
+    random scalar r, called the blinding factor. Therefore, given m and r, it is
+    easy to verify that the Pedersen commitment C is the correctly generated output.
+    The Pedersen commitment generated from m and r is computation-
+    ally binding to the message m as long as DLP is hard in Gp. The ability
+    to find alternative inputs m0 and r0 for which the Pedersen commitment
+    generates the same point C leads to an efficient solution for DLP in Gp.
+
+    Pedersen commitments have the following components:
+    1. PedersenSetup: G;H are randomly generated "base points" in the
+    group Gp.
+    2. PedersenCommit(m) -> (C, r): The input is m in Fp and the output is
+    mG + rH for a random r  <–_R Fp.
+    3. PedersenOpen (C, r, m) –> (r, m): The opening of a commitment C are
+    a pair of values m, r for which it can be verified that mG + rH = C.
+
+
+    Homomorphic addition Two Pedersen commitments C1 = m1G + r1H
+    and C2 = m2G+r2H can be added using the group operation in Gp to form
+    the new commitment C3 = C1 + C2. The element C3 is a commitment to
+    m1 + m2 mod p with the blinding factor r1 + r2 mod p.
+
+    This is the structure of ABAR
+
+    pub struct AnonBlindAssetRecord {
+        pub amount_type_commitment: Commitment,
+        pub public_key: AXfrPubKey,
+    }
+
+    Concerns:
+    1.- There is just one commitment, so this means that we compute the commitment for amount and
+    the commitment for asset type, and finally we obtain "amount_type_commitment" adding
+    the two commitment and using the homomorphic addition property of the pedersen commitments
+
+    So we ill need to modify the code to have the structure as follows
+
+    pub struct AnonBlindAssetRecord {
+        pub amount_commitment: Commitment,
+        pub type_commitment: Commitment,
+        pub public_key: AXfrPubKey,
+    }
+
+    That way we can use the type_commitment to implement Schnorr Proof Protocol or
+    chaum_pedersen_prove_eq which  Computes a Chaum-Pedersen proof of knowledge of
+    openings of two commitments to the same value
+
+    2.- These are the steps involved in doing a Anonymous transfer
+
+        1.- Receiver generates a wallet which has a AXfrPrivateKey and a Decryption Key in the local database
+        2.- Receiver generates a AXfrPublicKey and a public Encryption Key from the secret keys of first step and sends them to the Anon Transfer sender
+        3.- Sender opens an ABAR which he has ownership of and creates a new ABAR for the receiver’s randomized public key and encrypts it with the key from step 2.
+        4.- The Network verifies the spending of sender’s ABAR and adds the new abar to its store, generating a new uid in the process.
+        5.- Sender receives the confirmation of his txn from the network and sends the randomizer to the receiver. (public channels)
+        6.- Receiver generates the randomized public key from his Private Key in step 1 and randomizer from step 5.
+        7.- Receiver queries the ledger for ABARs owned by this randomized public key from step 6, and gets the corresponding txn.
+        8.- Receiver opens the abar with owner memo, private key (step 1) and decryption key (step 1) and confirms the amount and asset type, also generate a nullifier and create a non membership proof
+        9.- Receiver wallet saves the TxoSID of the ABAR and randomizer combination as a unspent anon asset in the local database
+        10.- In the future, receiver is the new spender and utilizes his now opened abar like Step 8 to generate a new transaction with the nullifier(Step 3).
+
+        Between step 3 and 4 we need to
+        2.1 Proof amount is greater that Fee = 0.01 FRA (for instance)
+        2.2  And generating a new ABAR's, but this time the amounts should hold
+
+                                    6.01 FRA
+        Input –> Owner (17.01 FRA)     –>      Owner (11.0 FRA)   <– output
+                                               Receiver (6.0 FRA) <– output
+                                               ––––––––––––––––––
+                                                Burnt (0.01 FRA)
+
+
+    /
+     */
+    pub fn generate_proof_FRA_input(&self) -> SigmaProof<G::S, G> {
+        let mut csprng: ChaChaRng;
+        csprng = ChaChaRng::from_seed([0u8; 32]);
+
+        self.body.memos.//get asset type from here
+        let mut asset_type_fra = Transcript::new(b"Asset-Code-FRA-AAAAAAAAAAA");
+        let base = RistrettoPoint::get_base();
+        let scalar = Scalar::random(&mut csprng);
+        let scalar2 = scalar.add(&Scalar::from_u32(1));
+        let point = base.mul(&scalar);
+
+        prove_knowledge_dlog(
+            &mut prover_transcript,
+            &mut csprng,
+            &base,
+            &point,
+            &scalar,
+        )
+    }
+
+
+    pub fn check_inputs_fra(&self) -> Result<()>{
+        //The other posibility is that the sender includes Dlog proof of one input to be FRA
+        // so it copuld be stored on the ledger and the ledger can verify at least one
+        // input is FRA as follows
+
+        let mut csprng: ChaChaRng;
+        csprng = ChaChaRng::from_seed([0u8; 32]);
+
+        let mut verifier_asset_type_fra = Transcript::new(b"Asset-Code-FRA-AAAAAAAAAAA");
+        let base = RistrettoPoint::get_base();
+        let point = base.mul(&scalar);
+
+        //Here the proof must be included in the trassaction
+        //let proof
+
+        verify_proof_of_knowledge_dlog(
+            &mut verifier_asset_type_fra,
+            &mut csprng,
+            &base,
+            &point,
+            &proof
+        )
+
+
+>>>>>>> ef36230cecf6fbd77c344bc569756ad9e15c2638
     }
 
     //check one of the outputs is an fra 
