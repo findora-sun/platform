@@ -1633,7 +1633,7 @@ impl Transaction {
 
     //check one of the inputs is an fra 
     pub fn check_inputs_fra(&self) -> bool{
-
+        
     }
 
     //check one of the outputs is an fra 

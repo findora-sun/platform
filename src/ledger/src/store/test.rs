@@ -755,6 +755,7 @@ fn gen_fee_operation(
     Operation::TransferAsset(transfer)
 }
 
+//test for incorporating anonymous fees
 #[test]
 fn check_anon_fees() {
     let mut ledger = LedgerState::tmp_ledger();
@@ -780,6 +781,80 @@ fn check_anon_fees() {
         .remove(&tmp_sid)
         .unwrap()
         .1[0];
+}
+
+#[test]
+pub fn test_check_eq_commitment_fees() {
+    let mut prng = ChaChaRng::from_seed([0u8; 32]);
+
+    //println!("{:?}", SystemTime::now());
+    //let user_params =
+    //    UserParams::from_file_if_exists(1, 1, Some(41), DEFAULT_BP_NUM_GENS, None)
+    //       .unwrap();
+    //println!("{:?}", SystemTime::now());
+
+    let amount = 71u64;
+    let asset_type = 52u8;//AssetType::from_identical_byte(52);
+
+    // simulate input abar
+    //let (oabar, keypair_in, dec_key_in, _) =
+    //    gen_oabar_and_keys(&mut prng, amount, asset_type);
+    //let abar = AnonBlindAssetRecord::from_oabar(&oabar);
+
+    let mut prng = ChaChaRng::from_seed([0u8; 32]);
+    let params = UserParams::eq_committed_vals_params();
+    let (proof, hash_comm, ped_comm) = {
+        // prover scope
+        // compute Rescue commitment
+        let comm = HashCommitment::new();
+        //let amount =  //BLSScalar::from_u32(71);
+        let amount_1 = BLSScalar::from_u64(amount);
+        //let asset_type = BLSScalar::from_u32(52);
+        let asset_type_1 = asset_type;//BLSScalar::from_bytes(asset_type);// BLSScalar::from_u32(52);
+        let blind_hash = BLSScalar::random(&mut prng);
+        let hash_comm = comm.commit(&blind_hash, &[amount_1, asset_type_1]).unwrap(); // safe unwrap
+
+        //All this must be substitute by the commitment generated in abar
+        //In this example we are building the two commitments but in the actual case
+        //We are going to compere the original commitment on abar vs the pedersen commitment we built
+        
+        //let hash_com =  abar.amount_type_commitment;
+
+        // compute Pedersen commitment
+        let pc_gens_jubjub = PedersenGens::<JubjubPoint>::new(2);
+        //let amount_jj = JubjubScalar::from_u32(71);
+        let amount_jj = JubjubScalar::from_u64(amount);
+        //let at_jj = JubjubScalar::from_u32(52);
+        let at_jj = JubjubScalar::zei_from_bytes (&[asset_type]);
+        let blind_pc = JubjubScalar::random(&mut prng);
+        let ped_comm = pc_gens_jubjub
+            .commit(&[amount_jj, at_jj], &blind_pc)
+            .unwrap(); // safe unwrap
+
+        // compute the proof
+        let proof = zei::anon_xfr:: prove_eq_committed_vals(
+            &mut prng,
+            &params,
+            amount,
+            asset_type,
+            BLSScalar::from(&blind_pc),
+            blind_hash,
+            &pc_gens_jubjub,
+        )
+            .unwrap(); // safe unwrap
+        (proof, hash_comm, ped_comm)
+    };
+    {
+        // verifier scope
+        let node_params = NodeParams::from(params);
+        assert!(verify_eq_committed_vals(
+            &node_params,
+            hash_comm,
+            &ped_comm,
+            &proof
+        )
+            .is_ok());
+    }
 }
 
 #[test]
